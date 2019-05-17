@@ -15,7 +15,8 @@ import logging
 import pickle
 import sklearn
 import numpy as np
-from image_iter import FaceImageIter
+#from image_iter import FaceImageIter
+from image_iter_process_pk import FaceImageIter,PrefetchFaceIter
 import mxnet as mx
 from mxnet import ndarray as nd
 import argparse
@@ -32,7 +33,7 @@ import fmobilefacenet
 import fmobilenet
 import fmnasnet
 import fdensenet
-
+import databatch_process
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -213,20 +214,59 @@ def train_net(args):
         args = args,
     )
     val_dataiter = None
-    train_dataiter = FaceImageIter(
-        batch_size           = args.batch_size,
-        data_shape           = data_shape,
-        path_imgrec          = path_imgrec,
-        shuffle              = True,
-        rand_mirror          = config.data_rand_mirror,
-        mean                 = mean,
-        cutoff               = config.data_cutoff,
-        color_jittering      = config.data_color,
-        images_filter        = config.data_images_filter,
-    )
+    #train_dataiter = FaceImageIter(
+    #    batch_size           = args.batch_size,
+    #    data_shape           = data_shape,
+    #    path_imgrec          = path_imgrec,
+    #    shuffle              = True,
+    #    rand_mirror          = config.data_rand_mirror,
+    #    mean                 = mean,
+    #    cutoff               = config.data_cutoff,
+    #    color_jittering      = config.data_color,
+    #    images_filter        = config.data_images_filter,
+    #)
+    kv = mx.kvstore.create(args.kvstore)
+    mean, scale = 0.0, 1.0
+    databatch_callback = databatch_process.TransMeanScale(mean, scale)
+    train_dataiter = PrefetchFaceIter(
+            batch_size = args.batch_size,
+            data_shape = data_shape,
+            path_imgrec = path_imgrec,
+            shuffle = True,
+            rand_mirror = False,
+            num_parts = kv.num_workers,
+            part_index = kv.rank,
+            unpack64 = 0,
+            single_channel = 0,
+            bright_jitter_prob = config.bright_jitter_prob,
+            bright_jitter_range = config.bright_jitter_range,
+            gaussblur_prob = config.gaussblur_prob,
+            gaussblur_kernelsz_max = config.gaussblur_kernelsz_max,
+            gaussblur_sigma = config.gaussblur_sigma,
+            motionblur_prob = config.motionblur_prob,
+            spatial_bright_prob = config.spatial_bright_prob,
+            spatial_bright_range = config.spatial_bright_range,
+            jpeg_compress_prob = config.jpeg_compress_prob,
+            jpeg_compress_quality_max = config.jpeg_compress_quality_max,
+            jpeg_compress_quality_min = config.jpeg_compress_quality_min,
+            rand_gray_prob = config.rand_gray_prob,
+            downsample_prob = config.downsample_prob,
+            downsample_min_width = config.downsample_min_width,
+            inter_method = config.inter_method,
+            contrast_prob = config.contrast_prob,
+            contrast_range = config.contrast_range,
+            sample_type = config.sample_type,
+            num_samples_per_class = config.nsamples_class,
+            max_samples_per_class = config.max_nsamples_class,
+            databatch_process_callback = databatch_callback,
+            pk_replace = config.pk_replace,
+            offline_feature = config.offline_feature,
+            prefetch_process = 16,
+            prefetch_process_keep = 32,
+            local_run = config.local_run > 0
+            )
 
-
-    
+    args.epoch_size = train_dataiter.epoch_size
     if config.net_name=='fresnet' or config.net_name=='fmobilefacenet':
       initializer = mx.init.Xavier(rnd_type='gaussian', factor_type="out", magnitude=2) #resnet style
     else:
@@ -323,7 +363,7 @@ def train_net(args):
         sys.exit(0)
 
     epoch_cb = None
-    train_dataiter = mx.io.PrefetchingIter(train_dataiter)
+    #train_dataiter = mx.io.PrefetchingIter(train_dataiter)
 
     model.fit(train_dataiter,
         begin_epoch        = begin_epoch,

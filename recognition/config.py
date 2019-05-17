@@ -28,6 +28,29 @@ config.data_images_filter = 0
 config.count_flops = False#True
 config.memonger = False #not work now
 
+config.bright_jitter_prob = 0.0
+config.bright_jitter_range = 0.4# 0.4 is recommended
+config.gaussblur_prob = 0 # 0.3 is recommended
+config.gaussblur_kernelsz_max = 9
+config.gaussblur_sigma = 0
+config.motionblur_prob = 0 # 0.2 is recommended
+config.spatial_bright_prob = 0
+config.spatial_bright_range = 0.5 # 0.5 is recommended
+config.jpeg_compress_prob = 0.0
+config.jpeg_compress_quality_max = 95
+config.jpeg_compress_quality_min = 7
+config.rand_gray_prob = 0.0 # 0.08 is recommended
+config.downsample_prob = 0.0
+config.downsample_min_width = 40
+config.inter_method = 1
+config.contrast_prob = 0
+config.contrast_range = 0.4 # 0.4 is recommended
+config.sample_type = 1 #0: normal shuffle; 1: pk with partial data; 2: pk with all data; 3: pk with partial data (max_num_per_id); 4: id shuffle only
+config.nsamples_class = '4,10,8'
+config.max_nsamples_class = 1
+config.pk_replace = 1
+config.offline_feature = 0
+config.local_run = 0
 
 # network settings
 network = edict()
@@ -115,7 +138,8 @@ dataset.emore.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
 
 dataset.retina = edict()
 dataset.retina.dataset = 'retina'
-dataset.retina.dataset_path = 'hdfs://hobot-bigdata-aliyun/user/mengao.zhao/competition/LWFR/train_data/ms1m-retinaface-t1/'
+dataset.retina.dataset_path = '/cluster_home/ms1m-retinaface-t1/'
+#dataset.retina.dataset_path = 'hdfs://hobot-bigdata-aliyun/user/mengao.zhao/competition/LWFR/train_data/ms1m-retinaface-t1/'
 dataset.retina.num_classes = 93431
 dataset.retina.image_shape = (112,112,3)
 dataset.retina.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
@@ -182,14 +206,14 @@ default.dataset = 'emore'
 default.loss = 'arcface'
 default.frequent = 20
 default.verbose = 2000
-default.kvstore = 'device'
+default.kvstore = 'local'#'device'
 
 default.end_epoch = 10000
 default.lr = 0.1
 default.wd = 0.0005
 default.mom = 0.9
 default.per_batch_size = 128
-default.ckpt = 3
+default.ckpt = 2
 default.lr_steps = '100000,160000,220000'
 default.models_root = './models'
 
